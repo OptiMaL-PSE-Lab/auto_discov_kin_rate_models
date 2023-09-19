@@ -1,4 +1,4 @@
-# In this adapted version, we have changed the original strong formulation of the package into a weak formulation
+# In this adapted version, we have changed the original strong formulation of the package into a weak formulation, the rest of the package, including this README have been left unchanged.
 
 # SymbolicRegression.jl
 
