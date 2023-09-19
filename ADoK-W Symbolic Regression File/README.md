@@ -1,3 +1,5 @@
+# In this adapted version, we have changed the original strong formulation of the package into a weak formulation
+
 # SymbolicRegression.jl
 
 | Latest release | Documentation | Build status | Coverage |
