@@ -90,7 +90,9 @@ $$x_0^{(new)} = \arg\max_{x_0} \int_{t_0}^{t_f} \ell\left(\hat x_\eta \left(\tau
 
 In the above equation, $\ell$ represents the RSS. Starting from the proposed initial condition, an experiment can be carried out to obtain a new batch of data points to be added to the original data set. Finally, the whole process of model proposal and selection can be redone with the enhanced data set, closing the loop between informative experiments and optimal models.
 
-## Code Example for ADoK-S
+## Code Example for ADoK-S: Hydrodealkylation of Toluene
+The code presented below serves to give step-by-step instructions on how to execute ADoK-S. Near identical script can be found in the sym_reg_models.py file within the Hydrodealkylation of Toluene file within the ADoK-S file in this repository. Similar scripts can be found for the other case studies in their respective files.
+
 ### Import Important Packages
 Below we show the needed packages to install for the rest of the example to run.
 
