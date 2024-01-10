@@ -105,6 +105,7 @@ from scipy.misc import derivative as der
 import re
 import itertools as it 
 from time import perf_counter
+from scipy.optimize import minimize
 ```
 
 ### Data Generation
@@ -368,6 +369,86 @@ for i in range(num_exp):
     ax.legend(loc='upper right', fontsize=15)
     
 plt.show()
+```
+
+### Parameter Estimation for Concentration Models
+The parameters of any concentration model can be optimized using the following code example. The code can be changed manually, or the generated concentration models in the csv files can be used to automatically generate functions and optimize them. 
+
+```ruby
+def competition(k, t):
+    # Define the competition model. The state is a function of parameters k and time t.
+    k_1 = k[0]
+    k_2 = k[1]
+
+    # Calculate the state based on the model's formula.
+    state = k_1 + (-k_2 * t)
+    
+    return state
+
+def sse(params, exp, spec):
+    # Calculate the sum of squared errors (SSE) for a given set of parameters.
+    # 'exp' is the experiment number and 'spec' is the species.
+
+    # Find the index of the specified species in the global list 'species'.
+    num = species.index(spec)
+
+    # Retrieve observed data for the specified experiment and species.
+    observations = in_silico_data["exp_" + exp][num]
+
+    # Compute the model response using the competition model.
+    model_response = competition(params, time)
+
+    # Calculate the SSE between the observed data and the model response.
+    SSE = (observations - model_response)**2
+    total = np.sum(SSE)
+
+    return total
+
+def callback(xk):
+    # Callback function to output the current solution during optimization.
+    print(f"Current solution: {xk}")
+
+def Opt_Rout(multistart, number_parameters, x0, lower_bound, upper_bound, to_opt, exp, spec):
+    # Perform optimization with multiple starting points.
+    # 'multistart' is the number of starts, 'number_parameters' is the number of parameters in the model.
+    # 'x0' is the initial guess, 'to_opt' is the function to minimize (SSE in this case).
+
+    # Initialize arrays to store local solutions and their corresponding values.
+    localsol = np.empty([multistart, number_parameters])
+    localval = np.empty([multistart, 1])
+    boundss = tuple([(lower_bound, upper_bound) for i in range(number_parameters)])
+    
+    # Perform optimization for each start.
+    for i in range(multistart):
+        res = minimize(to_opt, x0, method='L-BFGS-B', args=(exp, spec), bounds=boundss, callback=callback)
+        localsol[i] = res.x
+        localval[i] = res.fun
+
+    # Find the best solution among all starts.
+    minindex = np.argmin(localval)
+    opt_val = localval[minindex]
+    opt_param = localsol[minindex]
+    
+    return opt_val, opt_param
+
+# Set parameters for the optimization routine.
+multistart = 10
+number_parameters = 2
+lower_bound = 0.0001
+upper_bound = 10
+exp = "2"  # Experiment number
+spec = "H"  # Species
+
+# Generate an initial guess for the parameters.
+solution = np.random.uniform(lower_bound, upper_bound, number_parameters)
+print('Initial guess = ', solution)
+
+# Perform the optimization to find the best parameters that minimize the SSE.
+opt_val, opt_param = Opt_Rout(multistart, number_parameters, solution, lower_bound, upper_bound, sse, exp, spec)
+
+# Output the results.
+print('MSE = ', opt_val)
+print('Optimal parameters = ', opt_param)
 ```
 
 ### Numerically Differentiating the Best Concentration Models
@@ -675,9 +756,169 @@ print(all_ODEs[best_model_index])
 print(all_ODEs[second_min_index])
 ```
 
+### Parameter Estimation for Rate Models
+The parameters of any rate model can be optimized using the following code example. The code can be changed manually, or the generated rate models in the csv files can be used to automatically generate ODE systems and optimize them. 
+
+```ruby
+def competition(k, z0):
+    # Define rate constants
+    k_1, k_2, k_3, k_4 = k
+
+    # Nested function defining the system of ODEs
+    def nest(t, z):
+        # Differential equations for each species in the competition model
+        dTdt = (-1) * ((k_1 * z[1] * z[0]) / (k_2 + k_3 * z[2] + k_4 * z[0]))
+        dHdt = (-1) * ((k_1 * z[1] * z[0]) / (k_2 + k_3 * z[2] + k_4 * z[0]))
+        dBdt = ((k_1 * z[1] * z[0]) / (k_2 + k_3 * z[2] + k_4 * z[0]))
+        dMdt = ((k_1 * z[1] * z[0]) / (k_2 + k_3 * z[2] + k_4 * z[0]))     
+        dzdt = [dTdt, dHdt, dBdt, dMdt]
+        return dzdt
+        
+    # Time points for the ODE solution
+    time = np.linspace(0, 10, 30)
+    t = [0, np.max(time)]
+    t_eval = list(time)
+    
+    # Solve the ODE system
+    sol = solve_ivp(nest, t, z0, t_eval=t_eval, method="RK45")
+    
+    return sol.y
+
+def sse(params):
+    # Function to calculate Sum of Squared Errors for all experiments
+    num_exp = len(initial_conditions)
+    total_sse = np.zeros(num_exp)
+
+    for i in range(num_exp):
+        ic = initial_conditions["ic_" + str(i+1)]
+        observations = in_silico_data["exp_" + str(i + 1)]
+        model_response = competition(params, ic)
+
+        # Calculate SSE for each experiment
+        SSE = (observations - model_response)**2
+        total_sse[i] = np.sum(SSE)
+
+    return np.sum(total_sse)
+
+def callback(xk):
+    # Callback function for optimization process
+    print(f"Current solution: {xk}")
+
+def Opt_Rout(multistart, number_parameters, x0, lower_bound, upper_bound, to_opt):
+    # Function to perform optimization with multiple starting points
+    localsol = np.empty([multistart, number_parameters])
+    localval = np.empty([multistart, 1])
+    bounds = [(lower_bound, upper_bound) for _ in range(number_parameters)]
+    
+    for i in range(multistart):
+        # Perform optimization using L-BFGS-B method
+        res = minimize(to_opt, x0, method='L-BFGS-B', bounds=bounds, callback=callback)
+        localsol[i] = res.x
+        localval[i] = res.fun
+
+    # Identify the best solution
+    minindex = np.argmin(localval)
+    opt_val = localval[minindex]
+    opt_param = localsol[minindex]
+    
+    return opt_val, opt_param
+
+# Setting up the optimization parameters
+multistart = 10
+number_parameters = 4
+lower_bound = 0.0001
+upper_bound = 10
+
+# Initial guess for the parameters
+solution = np.random.uniform(lower_bound, upper_bound, number_parameters)
+print('Initial guess = ', solution)
+
+# Perform optimization to minimize the SSE
+opt_val, opt_param = Opt_Rout(multistart, number_parameters, solution, lower_bound, upper_bound, sse)
+
+# Print the optimization results
+print('MSE = ', opt_val)
+print('Optimal parameters = ', opt_param
+```
+
+### Model-Based Design of Experiments
+If the user has the experimental budget to run more experiments and the rate model output by the methodology is not satisfactory, they can use the following code to figure out the optimal experiment to discriminate between the two best models output by ADoK-S (within experimental constraints). 
+
+```ruby
+def SR_model(z0, equations, t, t_eval):
+    # Function to solve an ODE system defined by symbolic regression (SR) models.
+    # 'z0' is the initial condition, 'equations' are the model equations, 't' is the time interval,
+    # and 't_eval' are the time points at which to evaluate the solution.
+
+    for i, equation in enumerate(equations):
+        # Replace species symbols in equations with corresponding state variables.
+        equation = equation.replace("T", "z[0]").replace("H", "z[1]").replace("B", "z[2]").replace("M", "z[3]")
+        equations[i] = equation
+
+    def nest(t, z):
+        # Nested function to evaluate the ODE system.
+        dTdt = eval(equations[0])
+        dHdt = eval(equations[1])
+        dBdt = (-1) * eval(equations[2])
+        dMdt = (-1) * eval(equations[3])
+        dzdt = [dTdt, dHdt, dBdt, dMdt]
+        return dzdt
+
+    # Solve the ODE system using scipy's solve_ivp.
+    sol = solve_ivp(nest, t, z0, t_eval=t_eval, method="RK45")  
+    return sol.y
+
+def MBDoE(ic, time, sym_model_1, sym_model_2):
+    # Function for Model-Based Design of Experiments (MBDoE).
+    # 'ic' is the initial condition, 'time' is the time points, and 'sym_model_1' and 'sym_model_2' are the models.
+
+    # Solve the ODEs for each model.
+    SR_thing_1 = SR_model(ic, sym_model_1, [0, np.max(time)], list(time))
+    SR_thing_2 = SR_model(ic, sym_model_2, [0, np.max(time)], list(time))
+    
+    # Reshape the output and calculate the difference between the two models.
+    difference = -np.sum((SR_thing_1.reshape(len(time), -1) - SR_thing_2.reshape(len(time), -1))**2)
+    return difference
+
+def Opt_Rout(multistart, number_parameters, lower_bound, upper_bound, to_opt, time, sym_model_1, sym_model_2):
+    # Function to perform optimization with multiple starting points.
+    # 'multistart' is the number of starting points, and 'number_parameters' is the number of parameters in the model.
+
+    localsol = np.empty([multistart, number_parameters])
+    localval = np.empty([multistart, 1])
+    bounds = [(lower_bound[i], upper_bound[i]) for i in range(len(lower_bound))]
+    
+    for i in range(multistart):
+        # Generate a random initial condition and perform optimization.
+        x0 = np.random.uniform(lower_bound, upper_bound, size=number_parameters)
+        res = minimize(to_opt, x0, args=(time, sym_model_1, sym_model_2), method='L-BFGS-B', bounds=bounds)
+        localsol[i] = res.x
+        localval[i] = res.fun
+
+    # Find the best solution among all starts.
+    minindex = np.argmin(localval)
+    return localval[minindex], localsol[minindex]
+
+# Setting parameters for the optimization routine.
+multistart = 1
+number_parameters = 4
+lower_bound = np.array([1, 3, 0, 0.5])
+upper_bound = np.array([5, 8, 2, 3])
+to_opt = MBDoE
+timesteps = 15
+time = np.linspace(0, 10, timesteps)
+
+# Define symbolic models.
+sym_model_1 = ['-T/(0.8214542396002273*B + 3.4473477636258578*T/H) + 0.03834845547420483']
+sym_model_2 = ['-H*T/(B*H + 3.514128619371274*T)']
+
+# Perform optimization to find the best experimental conditions.
+opt_val, opt_param = Opt_Rout(multistart, number_parameters, lower_bound, upper_bound, to_opt, time, sym_model_1, sym_model_2)
+print('Optimal experiment: ', opt_param)
+```
 
 ## Citation
-```ruby
+```
 @misc{https://doi.org/10.48550/arxiv.2301.11356,
   doi = {10.48550/ARXIV.2301.11356},
   author = {de Carvalho Servia,  Miguel Ángel and Sandoval,  Ilya Orson and Hellgardt,  Klaus and Hii,  King Kuok and Zhang,  Dongda and del Rio Chanona,  Ehecatl Antonio},
