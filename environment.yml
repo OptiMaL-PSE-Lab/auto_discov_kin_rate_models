@@ -1,8 +1,8 @@
-name: symbolic_reg
+name: ADoK
 channels:
     - conda-forge
 dependencies:
-  - python=3.7
+  - python=3.11
   - numpy
   - pip
   - matplotlib
@@ -11,3 +11,7 @@ dependencies:
   - pysr
   - sympy
   - re
+  - pip:
+    - jax[cpu]
+    - optax
+    - gpjax
