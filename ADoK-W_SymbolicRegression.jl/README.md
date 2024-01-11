@@ -1,4 +1,9 @@
-# In this adapted version, we have changed the original strong formulation of the package into a weak formulation, the rest of the package, including this README have been left unchanged.
+> [!IMPORTANT]  
+> For the weak formulation (ADoK-W), we modified the SymbolicRegression.jl package to be able to integrate numerically the differential equations as defined by symbolic expressions.
+> The dataset format ingestion was modified as well, since this formulation depends on the initial condition of the differential equation.
+
+> [!NOTE]  
+> The specific modifications to the SymbolicRegression.jl (version 0.12.3) package can be seen here: https://github.com/MilesCranmer/SymbolicRegression.jl/compare/v0.12.3...IlyaOrson:SymbolicRegression.jl:weak_formulation
 
 # SymbolicRegression.jl
 
