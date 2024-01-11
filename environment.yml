@@ -1,0 +1,13 @@
+name: symbolic_reg
+channels:
+    - conda-forge
+dependencies:
+  - python=3.7
+  - numpy
+  - pip
+  - matplotlib
+  - pandas
+  - scipy
+  - pysr
+  - sympy
+  - re
