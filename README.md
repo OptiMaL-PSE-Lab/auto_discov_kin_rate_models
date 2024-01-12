@@ -2,14 +2,17 @@
 
 The industrialization of catalytic processes requires reliable kinetic models for their design, optimization and control. Mechanistic models require significant domain knowledge, while data-driven and hybrid models lack interpretability. Automated knowledge discovery methods, such as ALAMO, SINDy, and genetic programming, have gained popularity but suffer from limitations such as needing model structure assumptions, exhibiting poor scalability, and displaying sensitivity to noise. To overcome these challenges, we propose two methodological frameworks, ADoK-S and ADoK-W, for the automated generation of catalytic kinetic models using a robust criterion for model selection. We leverage genetic programming for model generation and a sequential optimization routine for model refinement. The frameworks are tested against three case studies of increasing complexity, demonstrating their ability to retrieve the underlying kinetic rate model with limited noisy data from the catalytic systems, showcasing their potential for chemical reaction engineering applications.
 
-Carvalho Servia, M., Sandoval, I., Hellgardt, K., Hii, K., Zhang, D., & Rio Chanona, E.. (2023). The Automated Discovery of Kinetic Rate Models – Methodological Frameworks. https://doi.org/10.48550/arxiv.2301.11356
+> Carvalho Servia, M., Sandoval, I., Hellgardt, K., Hii, K., Zhang, D., & Rio Chanona, E.. (2023). The Automated Discovery of Kinetic Rate Models – Methodological Frameworks. https://doi.org/10.48550/arxiv.2301.11356
 
 
-## Introduction
+## Methodology
+
+<details>
+<summary>Click to expand</summary>
 
 ### Notation
 
-Here we also set the necessary mathematical notation to describe our methods precisely.
+Here we set the necessary mathematical notation to describe our methods precisely.
 We start from the standard symbolic regression formulation to later introduce the weak and strong variations of our framework.
 
 The domain set $\mathcal{Z}$ is the union of an arbitrary number of constants $\Gamma$ and a fixed number of variables $\mathcal{X}$.
@@ -96,14 +99,21 @@ $$x_0^{(new)} = \arg\max_{x_0} \int_{t_0}^{t_f} \ell\left(\hat x_\eta \left(\tau
 In the above equation, $\ell$ represents the RSS. Starting from the proposed initial condition, an experiment can be carried out to obtain a new batch of data points to be added to the original data set. Finally, the whole process of model proposal and selection can be redone with the enhanced data set, closing the loop between informative experiments and optimal models.
 
 
-## Tutorial for ADoK-S: Hydrodealkylation of Toluene
+</details>
+
+## Code tutorials
+
+<details>
+<summary>Click to expand</summary>
+
+### Tutorial for ADoK-S: Hydrodealkylation of Toluene
 The code presented below serves to give step-by-step instructions on how to execute ADoK-S. Near identical script can be found in the `sym_reg_models.py` file within the Hydrodealkylation of Toluene file within the ADoK-S file in this repository. Similar scripts can be found for the other case studies in their respective files.
 
-### Import required packages
+#### Import required packages
 Below we show the needed packages to be used in the rest of the example.
 
 <details>
-<summary>Code</summary>
+<summary>Show code</summary>
 
 ```python
 import numpy as np
@@ -121,11 +131,11 @@ from scipy.optimize import minimize
 
 </details>
 
-### Data Generation
+#### Data Generation
 Here, we will be working with the hydrodealkylation of toluene as a case study. The first thing that we must do is generate some data (if experimental data is not available - if it is, it should be formatted in the same way it is presented above).
 
 <details>
-<summary>Code</summary>
+<summary>Show code</summary>
 
 ```python
 def kinetic_model(t, z):
@@ -205,11 +215,11 @@ plt.show()
 
 </details>
 
-### Generating Concentration Models
+#### Generating Concentration Models
 Once we have generated the concentration versus time dataset, we must now create concentration profiles so we can then numerically differentiate them and approximate the rates of reaction (which cannot be measured experimentally). The inputs for the genetic programming algorithm can be changed in accordance to one's problems. This snippet of code will generate files with the equations 
 
 <details>
-<summary>Code</summary>
+<summary>Show code</summary>
 
 ```python
 # Loop through each experiment and species to perform symbolic regression
@@ -259,11 +269,11 @@ for i in range(num_exp):
 
 </details>
 
-### Finding the Best Concentration Models
+#### Finding the Best Concentration Models
 Once the concentration models have been produced, we will read them from the files that we generated using the snippet above. We will need to evaluate the models generated in order for us to select the ones that minimize the AIC value. This can be done with the following code.
 
 <details>
-<summary>Code</summary>
+<summary>Show code</summary>
 
 ```python
 def read_equations(path):
@@ -399,11 +409,11 @@ plt.show()
 
 </details>
 
-### Parameter Estimation for Concentration Models
+#### Parameter Estimation for Concentration Models
 The parameters of any concentration model can be optimized using the following code example. The code can be changed manually, or the generated concentration models in the csv files can be used to automatically generate functions and optimize them. 
 
 <details>
-<summary>Code</summary>
+<summary>Show code</summary>
 
 ```python
 def competition(k, t):
@@ -484,11 +494,11 @@ print('Optimal parameters = ', opt_param)
 
 </details>
 
-### Numerically Differentiating the Best Concentration Models
+#### Numerically Differentiating the Best Concentration Models
 Now that we have figured out which concentration models minimize the AIC (and we have plotted the models versus the in-silico data to ensure that the models are capturing the trends of the kinetic data), we must differentiate our models so that we can approximate the rate measurements that we do not have direct access to. Since we are working with a synthetic dataset, we will also plot the approximations to the true rate dataset.
 
 <details>
-<summary>Code</summary>
+<summary>Show code</summary>
 
 ```python
 derivatives = {}
@@ -550,11 +560,11 @@ SR_data = np.vstack((a, b))
 
 </details>
 
-### Generate Rate Models
+#### Generate Rate Models
 So far we have: (i) generated some kinetic data; (ii) using the kinetic data, construct concentration models for each species in each experiment; (iii) based on the constructed concentration models, we selected the best one based on AIC; (iv) from the best concentration model, we numerically differentiate it to approximate the rate of consumption and generation of the species. Now, with the approximations, we can use them to make rate models and again select the best rate model from the generated files. Below, using the genetic programming package, we make the rate models and save them as csv files (in the process, a bkup and a pickle file will be generated in the same directory, but these will not be used at all).
 
 <details>
-<summary>Code</summary>
+<summary>Show code</summary>
 
 ```python
 # Loop over each species to perform symbolic regression for rate models
@@ -607,11 +617,11 @@ for i in range(num_species):
 
 </details>
 
-### Selecting the Best Rate Model Generated
+#### Selecting the Best Rate Model Generated
 Similarly to what was done with the concentration models, we need to evaluate the generated rate models and find which one minimizes the AIC.
 
 <details>
-<summary>Code</summary>
+<summary>Show code</summary>
 
 ```python
 def rate_n_param(path):
@@ -804,11 +814,11 @@ print(all_ODEs[second_min_index])
 
 </details>
 
-### Parameter Estimation for Rate Models
+#### Parameter Estimation for Rate Models
 The parameters of any rate model can be optimized using the following code example. The code can be changed manually, or the generated rate models in the csv files can be used to automatically generate ODE systems and optimize them. 
 
 <details>
-<summary>Code</summary>
+<summary>Show code</summary>
 
 ```python
 def competition(k, z0):
@@ -894,11 +904,11 @@ print('Optimal parameters = ', opt_param
 
 </details>
 
-### Model-Based Design of Experiments
+#### Model-Based Design of Experiments
 If the user has the experimental budget to run more experiments and the rate model output by the methodology is not satisfactory, they can use the following code to figure out the optimal experiment to discriminate between the two best models output by ADoK-S (within experimental constraints). 
 
 <details>
-<summary>Code</summary>
+<summary>Show code</summary>
 
 ```python
 def SR_model(z0, equations, t, t_eval):
@@ -975,7 +985,7 @@ print('Optimal experiment: ', opt_param)
 
 </details>
 
-## Tutorial for ADoK-W
+### Tutorial for ADoK-W
 
 The weak formulation of our approach (ADoK-W) requires a slightly different workflow.
 The main difference being that we use a modification of the `SymbolicRegression.jl` package, to make it possible to integrate numerically the differential equations as defined by symbolic expressions.
@@ -998,7 +1008,7 @@ In summary, the logical steps are as follow:
 The following snippet shows the modified interface to do the regression, including the data generation logic for convenience.
 
 <details>
-<summary>Code</summary>
+<summary>Show code</summary>
 
 ```julia
 # activate the modified version of SymbolicRegression.jl included in this repo
@@ -1119,6 +1129,8 @@ for member in dominating
     println("$(complexity)\t$(loss)\t$(string)")
 end
 ```
+</details>
+
 </details>
 
 ## Citation
