@@ -2,7 +2,12 @@
 
 The industrialization of catalytic processes requires reliable kinetic models for their design, optimization and control. Mechanistic models require significant domain knowledge, while data-driven and hybrid models lack interpretability. Automated knowledge discovery methods, such as ALAMO, SINDy, and genetic programming, have gained popularity but suffer from limitations such as needing model structure assumptions, exhibiting poor scalability, and displaying sensitivity to noise. To overcome these challenges, we propose two methodological frameworks, ADoK-S and ADoK-W, for the automated generation of catalytic kinetic models using a robust criterion for model selection. We leverage genetic programming for model generation and a sequential optimization routine for model refinement. The frameworks are tested against three case studies of increasing complexity, demonstrating their ability to retrieve the underlying kinetic rate model with limited noisy data from the catalytic systems, showcasing their potential for chemical reaction engineering applications.
 
-## Notation
+Carvalho Servia, M., Sandoval, I., Hellgardt, K., Hii, K., Zhang, D., & Rio Chanona, E.. (2023). The Automated Discovery of Kinetic Rate Models – Methodological Frameworks. https://doi.org/10.48550/arxiv.2301.11356
+
+
+## Introduction
+
+### Notation
 
 Here we also set the necessary mathematical notation to describe our methods precisely.
 We start from the standard symbolic regression formulation to later introduce the weak and strong variations of our framework.
@@ -42,7 +47,7 @@ The output of the models with specific parameters $\theta_m$ are denoted as $\ha
 The complexity of a model is denoted as $\mathcal{C}(m)$ (here we use the number of nodes in an expression tree as the complexity of a symbolic expression).
 We distinguish between families of expressions with different levels of complexity $\kappa \in \mathbb{N}$ as $\mathcal{M}^\kappa = \lbrace m \in \mathcal{M} \mid \mathcal{C}(m) = \kappa \rbrace$.
 
-## Introduction to ADoK-S
+### ADoK-S
 For ADoK-S, the objective is to find the model $m$ that best maps the states to the rates:
 
 $$\hat{r}_m(t \mid \theta_m) = m(x(t) \mid \theta_m).$$
@@ -59,7 +64,7 @@ $$\theta_{m^\star}^\star = \arg\min_{\theta_{m^\star}} \sum_{i=1}^{n_t} \ell\lef
 
 In the above equations, $\ell$ represents the residual sum of squares (RSS).
 
-## Introduction to ADoK-W
+### ADoK-W
 For ADoK-W, we aim to find the model $m$ that best maps state variables to the differential equation system that define the state dynamics to then predict the concentration evolution:
 
 $$\dot x_m(t \mid \theta_m) = m(x(t)\mid \theta_m),$$
@@ -90,13 +95,17 @@ $$x_0^{(new)} = \arg\max_{x_0} \int_{t_0}^{t_f} \ell\left(\hat x_\eta \left(\tau
 
 In the above equation, $\ell$ represents the RSS. Starting from the proposed initial condition, an experiment can be carried out to obtain a new batch of data points to be added to the original data set. Finally, the whole process of model proposal and selection can be redone with the enhanced data set, closing the loop between informative experiments and optimal models.
 
-## Code Example for ADoK-S: Hydrodealkylation of Toluene
-The code presented below serves to give step-by-step instructions on how to execute ADoK-S. Near identical script can be found in the sym_reg_models.py file within the Hydrodealkylation of Toluene file within the ADoK-S file in this repository. Similar scripts can be found for the other case studies in their respective files.
 
-### Import Important Packages
-Below we show the needed packages to install for the rest of the example to run.
+## Tutorial for ADoK-S: Hydrodealkylation of Toluene
+The code presented below serves to give step-by-step instructions on how to execute ADoK-S. Near identical script can be found in the `sym_reg_models.py` file within the Hydrodealkylation of Toluene file within the ADoK-S file in this repository. Similar scripts can be found for the other case studies in their respective files.
 
-```ruby
+### Import required packages
+Below we show the needed packages to be used in the rest of the example.
+
+<details>
+<summary>Code</summary>
+
+```python
 import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
@@ -110,10 +119,15 @@ from time import perf_counter
 from scipy.optimize import minimize
 ```
 
+</details>
+
 ### Data Generation
 Here, we will be working with the hydrodealkylation of toluene as a case study. The first thing that we must do is generate some data (if experimental data is not available - if it is, it should be formatted in the same way it is presented above).
 
-```ruby
+<details>
+<summary>Code</summary>
+
+```python
 def kinetic_model(t, z):
     # Define rate constants for the kinetic model
     k_1 = 2 
@@ -189,10 +203,15 @@ for i in range(num_exp):
 plt.show()
 ```
 
+</details>
+
 ### Generating Concentration Models
 Once we have generated the concentration versus time dataset, we must now create concentration profiles so we can then numerically differentiate them and approximate the rates of reaction (which cannot be measured experimentally). The inputs for the genetic programming algorithm can be changed in accordance to one's problems. This snippet of code will generate files with the equations 
 
-```ruby
+<details>
+<summary>Code</summary>
+
+```python
 # Loop through each experiment and species to perform symbolic regression
 for i in range(num_exp):
     for j in range(num_species):
@@ -238,10 +257,15 @@ for i in range(num_exp):
                 pass
 ```
 
+</details>
+
 ### Finding the Best Concentration Models
 Once the concentration models have been produced, we will read them from the files that we generated using the snippet above. We will need to evaluate the models generated in order for us to select the ones that minimize the AIC value. This can be done with the following code.
 
-```ruby
+<details>
+<summary>Code</summary>
+
+```python
 def read_equations(path):
     # Reads equations from a CSV file
     data = pd.read_csv(path)
@@ -373,10 +397,15 @@ for i in range(num_exp):
 plt.show()
 ```
 
+</details>
+
 ### Parameter Estimation for Concentration Models
 The parameters of any concentration model can be optimized using the following code example. The code can be changed manually, or the generated concentration models in the csv files can be used to automatically generate functions and optimize them. 
 
-```ruby
+<details>
+<summary>Code</summary>
+
+```python
 def competition(k, t):
     # Define the competition model. The state is a function of parameters k and time t.
     k_1 = k[0]
@@ -453,10 +482,15 @@ print('MSE = ', opt_val)
 print('Optimal parameters = ', opt_param)
 ```
 
+</details>
+
 ### Numerically Differentiating the Best Concentration Models
 Now that we have figured out which concentration models minimize the AIC (and we have plotted the models versus the in-silico data to ensure that the models are capturing the trends of the kinetic data), we must differentiate our models so that we can approximate the rate measurements that we do not have direct access to. Since we are working with a synthetic dataset, we will also plot the approximations to the true rate dataset.
 
-```ruby
+<details>
+<summary>Code</summary>
+
+```python
 derivatives = {}
 SR_derivatives_T = np.array([])
 SR_derivatives_H = np.array([])
@@ -514,10 +548,15 @@ b = in_silico_data["exp_2"].T
 SR_data = np.vstack((a, b))
 ```
 
+</details>
+
 ### Generate Rate Models
 So far we have: (i) generated some kinetic data; (ii) using the kinetic data, construct concentration models for each species in each experiment; (iii) based on the constructed concentration models, we selected the best one based on AIC; (iv) from the best concentration model, we numerically differentiate it to approximate the rate of consumption and generation of the species. Now, with the approximations, we can use them to make rate models and again select the best rate model from the generated files. Below, using the genetic programming package, we make the rate models and save them as csv files (in the process, a bkup and a pickle file will be generated in the same directory, but these will not be used at all).
 
-```ruby
+<details>
+<summary>Code</summary>
+
+```python
 # Loop over each species to perform symbolic regression for rate models
 for i in range(num_species):
     successful = False  # Flag to indicate successful completion of symbolic regression
@@ -566,10 +605,15 @@ for i in range(num_species):
             pass
 ```
 
+</details>
+
 ### Selecting the Best Rate Model Generated
 Similarly to what was done with the concentration models, we need to evaluate the generated rate models and find which one minimizes the AIC.
 
-```ruby
+<details>
+<summary>Code</summary>
+
+```python
 def rate_n_param(path):
     # Read equations from a CSV file and extract the number of parameters in each equation
     data = pd.read_csv(path)
@@ -758,10 +802,15 @@ print(all_ODEs[best_model_index])
 print(all_ODEs[second_min_index])
 ```
 
+</details>
+
 ### Parameter Estimation for Rate Models
 The parameters of any rate model can be optimized using the following code example. The code can be changed manually, or the generated rate models in the csv files can be used to automatically generate ODE systems and optimize them. 
 
-```ruby
+<details>
+<summary>Code</summary>
+
+```python
 def competition(k, z0):
     # Define rate constants
     k_1, k_2, k_3, k_4 = k
@@ -843,10 +892,15 @@ print('MSE = ', opt_val)
 print('Optimal parameters = ', opt_param
 ```
 
+</details>
+
 ### Model-Based Design of Experiments
 If the user has the experimental budget to run more experiments and the rate model output by the methodology is not satisfactory, they can use the following code to figure out the optimal experiment to discriminate between the two best models output by ADoK-S (within experimental constraints). 
 
-```ruby
+<details>
+<summary>Code</summary>
+
+```python
 def SR_model(z0, equations, t, t_eval):
     # Function to solve an ODE system defined by symbolic regression (SR) models.
     # 'z0' is the initial condition, 'equations' are the model equations, 't' is the time interval,
@@ -919,8 +973,157 @@ opt_val, opt_param = Opt_Rout(multistart, number_parameters, lower_bound, upper_
 print('Optimal experiment: ', opt_param)
 ```
 
-## Citation
+</details>
+
+## Tutorial for ADoK-W
+
+The weak formulation of our approach (ADoK-W) requires a slightly different workflow.
+The main difference being that we use a modification of the `SymbolicRegression.jl` package, to make it possible to integrate numerically the differential equations as defined by symbolic expressions.
+We include the modified library in this repo within the `ADoK-W_SymbolicRegression.jl/` folder for convenience.
+
+> [!NOTE]  
+> The specific modifications to the SymbolicRegression.jl (version 0.12.3) package can be seen here: https://github.com/MilesCranmer/SymbolicRegression.jl/compare/v0.12.3...IlyaOrson:SymbolicRegression.jl:weak_formulation
+
+The dataset format ingestion was modified as well, since this formulation depends on the initial condition of the differential equation.
+The modified version expects the datapoints in an arrangement where each column of the csv file is the evolution of concentration through time of a given species.
+The regression execution needs to run in julia with the local modification of `SymbolicRegression.jl` activated.
+
+In summary, the logical steps are as follow:
+- Generate datapoints in the same way as ADoK-S, but these need to be stored in a csv file where each column is the evolution of concentration through time of a given species.
+- ⁠Generate rate models with ADoK (see code example below)
+- ⁠Estimate the parameters of the models using the same code as in ADoK-S
+- ⁠Select the best model using the same code as ADoK-S
+- If the chosen mode is unsatisfactory, find the optimal discriminatory experiment using same code as adok-s, run the experiment and generate a new dataset. Repeat the process.
+
+The following snippet shows the modified interface to do the regression, including the data generation logic for convenience.
+
+<details>
+<summary>Code</summary>
+
+```julia
+# activate the modified version of SymbolicRegression.jl included in this repo
+import Pkg
+project_dir = "ADoK-W_SymbolicRegression.jl"
+Pkg.activate(project_dir)
+Pkg.instantiate()
+
+# load the relevant julia packages
+using IterTools: ncycle
+using OrdinaryDiffEq
+using SymbolicRegression
+using DelimitedFiles
+
+# generate the synthetic data
+num_datasets = 5
+num_states = 4
+
+tspan = (0e0, 1e1)
+num_timepoints = 30
+
+times_per_dataset=collect(range(tspan[begin], tspan[end]; length=num_timepoints))
+
+ini_T = [1e0, 5e0, 5e0, 1e0, 1e0]
+ini_H = [8e0, 8e0, 3e0, 3e0, 8e0]
+ini_B = [2e0, 0e0, 0e0, 0e0, 2e0]
+ini_M = [3e0, 5e-1, 5e-1, 3e0, 5e-1]
+
+initial_conditions = [[x0...] for x0 in zip(ini_T, ini_H, ini_B, ini_M)]
+
+scoeff = [-1e0, -1e0, 1e0, 1e0]
+
+function rate(T, H, B, M; k1=2e0, k2=9e0, k3=5e0)
+    num = (k1*H*T)
+    # den = (1f0 + k2*T + (sqrt(k3) * sqrt(H)))^3f0
+    den = (1+k2*B+k3*T)
+    return num / den
+end
+
+function f(u, p, t)
+    T, H, B, M = u
+    r = rate(T, H, B, M)
+    return [stoic * r for stoic in scoeff]
+end
+
+condition(u,t,integrator) = true #any(y -> y < 1f-2, u)
+function affect!(integrator)
+    @show integrator
+    try
+        step!(deepcopy(integrator))
+    catch e
+        @infiltrate
+        throw(e)
+    end
+    return
+end
+dcb = DiscreteCallback(condition, affect!)
+
+function terminate_affect!(integrator)
+    terminate!(integrator)
+end
+function terminate_condition(u,t,integrator)
+    any(y -> y < 0, u)
+end
+ccb = ContinuousCallback(terminate_condition,terminate_affect!)
+
+isoutofdomain(u,p,t) = any(y -> y < 0, u)
+
+function generate_datasets(; noise_per_concentration=nothing)
+    datasets = []
+    for ini in initial_conditions
+        prob = ODEProblem(f, ini, tspan)
+        sol = solve(prob, AutoTsit5(Rosenbrock23()); saveat=times_per_dataset, callback=dcb, isoutofdomain)
+        arr = Array(sol)
+        if isnothing(noise_per_concentration)
+            push!(datasets, Array(sol))
+        else
+            noise_matrix = vcat([noise_level * randn(Float32, (1,length(times_per_dataset))) for noise_level in noise_per_concentration]...)
+            push!(datasets, Array(sol) .+ noise_matrix)
+            # push!(datasets, Array(sol))
+        end
+    end
+    return datasets
+end
+
+
+#------------------------------#
+# GENERATE THE DATASET IN JULIA
+datasets = generate_datasets(; noise_per_concentration=[0.46878853f0, 0.5313656f0, 0.23121147f0])
+
+# READ THE DATASET FROM PYTHON
+# each experiment is stored in a different csv file
+# each column stores the time evolution of each species
+
+# datasets = [permutedims(readdlm(project_dir*"/data_T2B_$i.csv", '|', Float64, '\n')) for i in 0:num_datasets-1]
+#------------------------------#
+
+# prepare the data for the regression
+X = hcat(datasets...)
+times = ncycle(times_per_dataset, num_datasets) |> collect
+experiments = vcat([fill(Float64(i), num_timepoints) for i in 1:num_datasets]...)
+
+# dummy variable, not really used internally...
+y = X[1,:]
+
+# execute the regression
+options = SymbolicRegression.Options(binary_operators=(+, *, /, -),hofFile="hall_of_fame_T2B.csv",maxsize=25,parsimony=1e-5)
+hall_of_fame = EquationSearch(X, y, niterations=50, options=options, numprocs=8, times=times, experiments=experiments, stoic_coeff=scoeff)
+
+dominating = calculate_pareto_frontier(X, y, hall_of_fame, options)
+
+println("Complexity\tMSE\tEquation")
+
+for member in dominating
+    complexity = compute_complexity(member.tree, options)
+    loss = member.loss
+    string = string_tree(member.tree, options)
+
+    println("$(complexity)\t$(loss)\t$(string)")
+end
 ```
+</details>
+
+## Citation
+```tex
 @misc{https://doi.org/10.48550/arxiv.2301.11356,
   doi = {10.48550/ARXIV.2301.11356},
   author = {de Carvalho Servia,  Miguel Ángel and Sandoval,  Ilya Orson and Hellgardt,  Klaus and Hii,  King Kuok and Zhang,  Dongda and del Rio Chanona,  Ehecatl Antonio},
