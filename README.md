@@ -975,7 +975,7 @@ print('Optimal experiment: ', opt_param)
 
 </details>
 
-## Tutorial for ADoK-W
+## Tutorial for ADoK-W
 
 The weak formulation of our approach (ADoK-W) requires a slightly different workflow.
 The main difference being that we use a modification of the `SymbolicRegression.jl` package, to make it possible to integrate numerically the differential equations as defined by symbolic expressions.
