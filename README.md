@@ -1033,7 +1033,6 @@ scoeff = [-1e0, -1e0, 1e0, 1e0]
 
 function rate(T, H, B, M; k1=2e0, k2=9e0, k3=5e0)
     num = (k1*H*T)
-    # den = (1f0 + k2*T + (sqrt(k3) * sqrt(H)))^3f0
     den = (1+k2*B+k3*T)
     return num / den
 end
@@ -1087,7 +1086,7 @@ end
 
 #------------------------------#
 # GENERATE THE DATASET IN JULIA
-datasets = generate_datasets(; noise_per_concentration=[0.46878853f0, 0.5313656f0, 0.23121147f0])
+datasets = generate_datasets(; noise_per_concentration=[0.2f0, 0.2f0, 0.2f0, 0.2f0])
 
 # READ THE DATASET FROM PYTHON
 # each experiment is stored in a different csv file
